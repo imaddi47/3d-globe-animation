@@ -20,12 +20,14 @@ mat3 rotY(float a) {
 
 void main() {
   mat3 R = rotY(uTime * uRotationSpeed);
-  vec3 rotatedPos    = R * position;
-  vec3 rotatedNormal = R * aNormal;
+  vec3 rotatedPos = R * position;
 
-  float d = distance(rotatedPos, uPointer);
+  // Lateral repel: push dot away from cursor in 3D space.
+  vec3 toDot = rotatedPos - uPointer;
+  float d = length(toDot);
+  vec3 awayDir = d > 0.0001 ? toDot / d : vec3(0.0);
   float falloff = 1.0 - smoothstep(0.0, uRepelRadius, d);
-  vec3 displaced = rotatedPos + rotatedNormal * (falloff * uRepelStrength * uPointerActive);
+  vec3 displaced = rotatedPos + awayDir * (falloff * uRepelStrength * uPointerActive);
 
   vEdgeBoost = falloff * uPointerActive;
 

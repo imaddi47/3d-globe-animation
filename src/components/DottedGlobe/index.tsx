@@ -1,9 +1,25 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GlobePoints } from './GlobePoints';
 import { ErrorBoundary } from './ErrorBoundary';
 import { WebGLFallback } from './WebGLFallback';
+
+function CameraRig({ radius }: { radius: number }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    const fov = 45;
+    const half = radius * 1.25;
+    const vDist = half / Math.tan((fov * Math.PI) / 360);
+    const hDist = vDist / aspect;
+    const dist = Math.max(vDist, hDist);
+    camera.position.set(0, 0, dist);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height, radius]);
+  return null;
+}
 
 export type DottedGlobeProps = {
   dotCount?: number;
@@ -28,9 +44,9 @@ export function DottedGlobe({
   dotCount = 4500,
   radius = 1.6,
   rotationSpeed = 0.5,
-  repelRadius = 0.7,
-  repelStrength = 0.25,
-  dotSize = 7.5,
+  repelRadius = 0.9,
+  repelStrength = 0.55,
+  dotSize = 0.05,
   className,
 }: DottedGlobeProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -53,10 +69,11 @@ export function DottedGlobe({
       {supportsWebGL ? (
         <ErrorBoundary fallback={<WebGLFallback />}>
           <Canvas
-            camera={{ position: [0, 0, 4], fov: 45 }}
-            gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+            camera={{ position: [0, 0, 5.5], fov: 45 }}
+            gl={{ alpha: true, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
             dpr={[1, 2]}
           >
+            <CameraRig radius={radius} />
             <GlobePoints {...props} />
           </Canvas>
         </ErrorBoundary>
