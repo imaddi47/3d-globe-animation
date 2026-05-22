@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Dotted Globe</title>
+    <style>
+      :root {
+        --globe-dot: #d4ff4a;
+        --globe-glow: #aaff3a;
+        --globe-bg: #000000;
+      }
+      html, body, #root { height: 100%; margin: 0; padding: 0; background: var(--globe-bg); }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: #fff; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
