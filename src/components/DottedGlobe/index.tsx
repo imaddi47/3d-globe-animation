@@ -43,7 +43,7 @@ function detectWebGL(): boolean {
 export function DottedGlobe({
   dotCount = 4500,
   radius = 1.6,
-  rotationSpeed = 0.5,
+  rotationSpeed = 0.22,
   repelRadius = 0.45,
   repelStrength = 0.55,
   dotSize = 0.05,
