@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import vertexShader from './globe.vert.glsl?raw';
 import fragmentShader from './globe.frag.glsl?raw';
 import { createRingPositions } from './createRingPositions';
-import { usePointerNDC } from './usePointerNDC';
+import { usePointerInteraction } from './usePointerNDC';
 
 type Props = {
   dotCount: number;
@@ -26,7 +26,7 @@ export function GlobePoints({
   color,
 }: Props) {
   const camera = useThree((s) => s.camera);
-  const pointer = usePointerNDC();
+  const pointer = usePointerInteraction();
 
   const { geometry, material, sphere } = useMemo(() => {
     const ringData = createRingPositions(dotCount, radius);
@@ -38,13 +38,16 @@ export function GlobePoints({
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uTime:           { value: 0 },
-        uPointer:        { value: new THREE.Vector3(999, 999, 999) },
+        uRayOrigin:      { value: new THREE.Vector3(0, 0, 999) },
+        uRayDir:         { value: new THREE.Vector3(0, 0, -1) },
         uPointerActive:  { value: 0 },
         uColor:          { value: color.clone() },
         uDotSize:        { value: dotSize },
         uRepelRadius:    { value: repelRadius },
         uRepelStrength:  { value: repelStrength },
         uRotationSpeed:  { value: rotationSpeed },
+        uDragYaw:        { value: 0 },
+        uDragPitch:      { value: 0 },
       },
       vertexShader,
       fragmentShader,
@@ -56,7 +59,7 @@ export function GlobePoints({
     return {
       geometry: geom,
       material: mat,
-      sphere: new THREE.Sphere(new THREE.Vector3(0, 0, 0), radius),
+      sphere: new THREE.Sphere(new THREE.Vector3(0, 0, 0), radius * 1.4),
     };
   }, [dotCount, radius, rotationSpeed, repelRadius, repelStrength, dotSize, color]);
 
@@ -66,15 +69,22 @@ export function GlobePoints({
 
   useFrame((_, delta) => {
     material.uniforms.uTime.value += delta;
+    material.uniforms.uDragYaw.value = pointer.current.dragYaw;
+    material.uniforms.uDragPitch.value = pointer.current.dragPitch;
 
     const p = pointer.current;
     let targetActive = 0;
     if (p.active) {
-      ndcVec.current.set(p.x, p.y);
+      ndcVec.current.set(p.ndcX, p.ndcY);
       raycaster.current.setFromCamera(ndcVec.current, camera);
-      const hit = raycaster.current.ray.intersectSphere(sphere, hitPoint.current);
+
+      // We test against an enlarged sphere so the dent stays anchored even
+      // when the cursor drifts slightly past the visible silhouette.
+      const ray = raycaster.current.ray;
+      const hit = ray.intersectSphere(sphere, hitPoint.current);
       if (hit) {
-        material.uniforms.uPointer.value.copy(hit);
+        material.uniforms.uRayOrigin.value.copy(ray.origin);
+        material.uniforms.uRayDir.value.copy(ray.direction).normalize();
         targetActive = 1;
       }
     }

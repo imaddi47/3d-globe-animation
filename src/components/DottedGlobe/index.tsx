@@ -65,7 +65,7 @@ export function DottedGlobe({
   );
 
   return (
-    <div ref={wrapRef} className={className} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div ref={wrapRef} className={className} style={{ width: '100%', height: '100%', position: 'relative', cursor: supportsWebGL ? 'grab' : 'default' }}>
       {supportsWebGL ? (
         <ErrorBoundary fallback={<WebGLFallback />}>
           <Canvas

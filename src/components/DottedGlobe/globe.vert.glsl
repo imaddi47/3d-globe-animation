@@ -1,10 +1,13 @@
 uniform float uTime;
-uniform vec3  uPointer;
+uniform vec3  uRayOrigin;
+uniform vec3  uRayDir;
 uniform float uPointerActive;
 uniform float uDotSize;
 uniform float uRepelRadius;
 uniform float uRepelStrength;
 uniform float uRotationSpeed;
+uniform float uDragYaw;
+uniform float uDragPitch;
 
 attribute vec3 aNormal;
 
@@ -18,15 +21,27 @@ mat3 rotY(float a) {
               s, 0.0, c);
 }
 
+mat3 rotX(float a) {
+  float c = cos(a);
+  float s = sin(a);
+  return mat3(1.0, 0.0, 0.0,
+              0.0, c, s,
+              0.0, -s, c);
+}
+
 void main() {
-  mat3 R = rotY(uTime * uRotationSpeed);
+  // Combined rotation: uniform auto-spin (Y) + accumulated drag (Y then X).
+  mat3 R = rotY(uTime * uRotationSpeed + uDragYaw) * rotX(uDragPitch);
   vec3 rotatedPos = R * position;
 
-  // Lateral repel: push dot away from cursor in 3D space.
-  vec3 toDot = rotatedPos - uPointer;
-  float d = length(toDot);
-  vec3 awayDir = d > 0.0001 ? toDot / d : vec3(0.0);
-  float falloff = 1.0 - smoothstep(0.0, uRepelRadius, d);
+  // Distance from this dot to the cursor RAY (not just a point), so the
+  // repel carves a tube straight through the sphere — both near and far
+  // walls clear.
+  vec3 toDot = rotatedPos - uRayOrigin;
+  vec3 perp = toDot - dot(toDot, uRayDir) * uRayDir;
+  float dRay = length(perp);
+  vec3 awayDir = dRay > 0.0001 ? perp / dRay : vec3(0.0);
+  float falloff = 1.0 - smoothstep(0.0, uRepelRadius, dRay);
   vec3 displaced = rotatedPos + awayDir * (falloff * uRepelStrength * uPointerActive);
 
   vEdgeBoost = falloff * uPointerActive;
