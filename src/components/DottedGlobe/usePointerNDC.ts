@@ -14,6 +14,12 @@ export type PointerInteractionState = {
   dragYaw: number;
   /** Accumulated vertical drag in radians */
   dragPitch: number;
+  /** Instantaneous cursor velocity in NDC units per second (x axis) */
+  velX: number;
+  /** Instantaneous cursor velocity in NDC units per second (y axis) */
+  velY: number;
+  /** `performance.now()` timestamp of the most recent pointermove */
+  lastMoveTime: number;
 };
 
 /** Drag sensitivity: radians per pixel of mouse movement */
@@ -28,6 +34,9 @@ export function usePointerInteraction() {
     dragging: false,
     dragYaw: 0,
     dragPitch: 0,
+    velX: 0,
+    velY: 0,
+    lastMoveTime: 0,
   });
   const lastX = useRef(0);
   const lastY = useRef(0);
@@ -37,12 +46,25 @@ export function usePointerInteraction() {
 
     const updateNDC = (clientX: number, clientY: number) => {
       const rect = el.getBoundingClientRect();
-      ref.current.ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-      ref.current.ndcY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+      return {
+        nx: ((clientX - rect.left) / rect.width) * 2 - 1,
+        ny: -(((clientY - rect.top) / rect.height) * 2 - 1),
+      };
     };
 
     const onMove = (e: PointerEvent) => {
-      updateNDC(e.clientX, e.clientY);
+      const { nx, ny } = updateNDC(e.clientX, e.clientY);
+      const now = performance.now();
+      const dt = ref.current.lastMoveTime > 0 ? (now - ref.current.lastMoveTime) / 1000 : 0;
+
+      // Only update velocity when dt is meaningful (avoid /0 and gigantic jumps after long idles).
+      if (dt > 0.001 && dt < 0.2) {
+        ref.current.velX = (nx - ref.current.ndcX) / dt;
+        ref.current.velY = (ny - ref.current.ndcY) / dt;
+      }
+      ref.current.lastMoveTime = now;
+      ref.current.ndcX = nx;
+      ref.current.ndcY = ny;
       ref.current.active = true;
 
       if (ref.current.dragging) {
