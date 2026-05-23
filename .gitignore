@@ -4,3 +4,6 @@ dist
 .vite
 coverage
 .superpowers/
+docs/media/frames/
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
